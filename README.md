@@ -1,6 +1,5 @@
 # 🧩 Micro-frontends — Коллекция UI-компонентов и блоков
 
-[![Лицензия](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
