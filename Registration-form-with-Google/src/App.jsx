@@ -5,20 +5,22 @@ import Notification from './Notification';
 import styles from './Notification.module.css';
 import ContactForm from './ContactForm';
 
+const savedUser = localStorage.getItem('user');
+
 const initialState = {
   // UI состояния
   isNotificationVisible: false,
   notificationConfig: { message: '', type: 'success' },
-  
-  // Форма
-  isLoginMode: false,
-  
-  // Auth
-  isLoggedIn: false,
-  user: null,
-  registeredUser: null, // Позже заменить харнение в стейте на backend
-};
 
+  //Форма
+  isLoginMode: false,
+
+  // Auth
+  user: savedUser ? JSON.parse(savedUser) : null,
+  isLoggedIn: !!savedUser,
+  
+};
+  //registeredUser: null 
 const ACTION_TYPES = {
   SHOW_NOTIFICATION: 'SHOW_NOTIFICATION',
   HIDE_NOTIFICATION: 'HIDE_NOTIFICATION',
@@ -66,15 +68,13 @@ const appReducer = (state, action) => {
         ...state,
         isLoggedIn: false,
         user: null,
-        registeredUser: null,
         isNotificationVisible: true,
-        notificationConfig: { message: 'Вы вышли', type: 'success' },
+        notificationConfig: { message: 'Вы вышли', type: 'success', autoHide: true },
       };
     
     case ACTION_TYPES.REGISTER_USER:
       return {
         ...state,
-        registeredUser: action.payload,
         isLoginMode: true,
         isNotificationVisible: true,
         notificationConfig: { message: 'Регистрация успешна!', type: 'success' },
@@ -86,20 +86,29 @@ const appReducer = (state, action) => {
 };
 
 function App() {
-const [state, dispatch] = useReducer(appReducer, initialState);
+  const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Деструктуризация состояния
+  //Слежу за компонентом
+  React.useEffect(() => {
+    if (state.isNotificationVisible && state.notificationConfig.autoHide) {
+      const timer = setTimeout(() => {
+        dispatch({ type: ACTION_TYPES.HIDE_NOTIFICATION });
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [state.isNotificationVisible, state.notificationConfig.autoHide]);
+  // Деструктуризация состояния для удобного удобства
  const {
     isNotificationVisible,
     notificationConfig,
     isLoginMode,
     isLoggedIn,
     user,
-    registeredUser,
   } = state;
 
 
-  // ХЕЛПЕР
+  // ХЕЛПЕР для автскрытия
   const showNotification = (message, type = 'info', autoHide = true) => {
     dispatch({ 
       type: ACTION_TYPES.SHOW_NOTIFICATION, 
@@ -138,16 +147,20 @@ const [state, dispatch] = useReducer(appReducer, initialState);
     const password = formData.get('password')?.toString().trim();
     const name = formData.get('name')?.toString().trim() || 'Пользователь';
     
+    localStorage.setItem('user', JSON.stringify({ name, email }))
+    
     if (!email || !email.includes('@')) {
       showNotification('Ошибка в Email!', 'error');
     } else if (password.length < 8) {
       showNotification('Пароль слишком короткий!', 'error');
     } else {
-      dispatch({ 
-        type: ACTION_TYPES.REGISTER_USER, 
-        payload: { name, email, password }
-      });
+       dispatch({ 
+    type: ACTION_TYPES.LOGIN_SUCCESS,
+    payload: { name, email }
+  })
     }
+
+    
   };
   
   const handleLogin = (e) => {
@@ -155,20 +168,24 @@ const [state, dispatch] = useReducer(appReducer, initialState);
     const data = new FormData(e.currentTarget);
     const email = data.get('email');
     const pass = data.get('password');
+
+    const savedUser = localStorage.getItem('user');
+    const user = savedUser ? JSON.parse(savedUser) : null;
     
-    if (registeredUser && email === registeredUser.email && pass === registeredUser.password) {
-      dispatch({ 
-        type: ACTION_TYPES.LOGIN_SUCCESS, 
-        payload: { name: registeredUser.name, email: registeredUser.email }
-      });
-    } else {
-      showNotification('Данные не совпадают!', 'error');
-    }
+    if (user && email === user.email && pass.length >= 8) {
+    dispatch({ 
+      type: ACTION_TYPES.LOGIN_SUCCESS, 
+      payload: { name: user.name, email: user.email }
+    });
+  } else {
+    showNotification('Данные не совпадают!', 'error');
+   }
   };
   
   const handleLogout = () => {
     dispatch({ type: ACTION_TYPES.LOGOUT });
   };
+
     //Блок зареганного пользователя
     if (isLoggedIn && user) { 
     return (
@@ -180,7 +197,7 @@ const [state, dispatch] = useReducer(appReducer, initialState);
             style={{ borderRadius: '50%', width: '100px', height: '100px' }}
           />
         )}
-        <h1>Добро пожаловать, {user.name || user.email}!</h1>  {/* ← user */}
+        <h1>Добро пожаловать, {user.name || user.email}!</h1>  
         <p>Вы успешно вошли в систему.</p>
         <button onClick={handleLogout}>Выйти</button>
       </div>
@@ -204,6 +221,7 @@ const [state, dispatch] = useReducer(appReducer, initialState);
           <div style={{ textAlign: 'center' }}>
             <p>Или зарегистрируйтесь через</p>
             <GoogleLogin
+            clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               theme="outline"
