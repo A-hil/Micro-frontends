@@ -1,9 +1,42 @@
-import {useState} from 'react'
+import React, { useReducer, useState } from 'react';
 import './App.css'
 
 function App() {
 
-  const [activeTab, setActiveTab] = useState('tab1')
+  const initialState = {
+  collapsedTabs: {}
+};
+
+   const appReducer = (state, action) => {
+    switch (action.type) {
+      case 'TOGGLE_TAB_COLLAPSE':
+        return {
+          ...state,
+          collapsedTabs: {
+            ...state.collapsedTabs,
+            [action.payload]: !state.collapsedTabs[action.payload]  // Переключаем флаг
+          }
+        };
+      default:
+        return state;
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState('tab1');
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  //Хелпер
+   const isCollapsed = (tabId) => !!state.collapsedTabs[tabId];
+  
+  const ACTION_TYPES = {
+    SHOW_TAB: 'SHOW_TAB',
+    HIDE_TAB: 'HIDE_TAB',
+    TOGGLE_MODE: 'TOGGLE_MODE',
+    LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+    LOGOUT: 'LOGOUT',
+    REGISTER_USER: 'REGISTER_USER',
+  };
+
+
 
   const tabs =[
     {id:"tab1", label:"Главная"},
@@ -29,6 +62,7 @@ function App() {
         <h2 className='mb-4 text-2xl font-bold text-black'>  
           О нас
         </h2>
+        <div>
         <p className='mb-4'>Узнайте больше о нашей компании и миссии</p>
         <span className='border-l-4 border-purple-500 pl-4 italic'>
           "Наша миссия - предоставлять инновационные решения для наших клиентов"
@@ -36,6 +70,7 @@ function App() {
         <p className='mt-5'>
           Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ducimus, est voluptate impedit rem illo non quasi rerum animi assumenda excepturi? Quisquam recusandae quibusdam, nostrum sit dolores tempore autem voluptatum vel!
         </p>
+        </div>
       </div>
     ),
     tab3:(
@@ -127,6 +162,7 @@ function App() {
         <div className='max-w-4xl w-full rounded-3xl border bg-white p-8 mx-10 shadow-xl space-y-5 min-h-550px flex flex-col'>
           
           <div className='flex flex-wrap border-b gap-2'>
+            
             {tabs.map((tab) => (
               <button 
                 key={tab.id}
@@ -135,18 +171,30 @@ function App() {
                     ? "bg-purple-500 text-white shadow-md" 
                     : "text-gray-600 hover:bg-purple-100 hover:text-purple-600"
                 }`}
-                onClick={() => setActiveTab(tab.id)}
+                 onClick={() => setActiveTab(tab.id)}
               >
+            
                 {tab.label}
+             
               </button>
+              
             ))}
+            <button 
+    onClick={() => dispatch({ type: 'TOGGLE_TAB_COLLAPSE', payload: activeTab })}
+    className="text-2xl text-purple-500 hover:text-purple-700 transition-transform px-2"
+  >
+    {isCollapsed(activeTab) ? 'Показать текст ▶' : 'Скрыть текст ▼'}
+  </button>
           </div>
 
-          {/* text-left для выравнивания по левому краю */}
-          <div className="pt-4 animate-fadeIn text-left flex-1">
-            {tabContent[activeTab]}
-          </div>
+          
+        
+         
+          <div className={`text-left flex-1 ${isCollapsed(activeTab) ? 'hidden' : 'block'}`}>
+          {tabContent[activeTab]}
+        </div>
 
+            
         </div>
       </div>
     </>
